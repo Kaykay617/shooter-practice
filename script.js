@@ -33,14 +33,7 @@ function updateStats() {
   shotsEl.textContent = shots;
   hitsEl.textContent = hits;
   accuracyEl.textContent = shots === 0 ? "0%" : `${Math.round((hits/shots)*100)}%`;
-
-  // Skill-based score
-  const avgTime = clickTimes.length > 1 ? (clickTimes.at(-1)-clickTimes[0])/hits : 0;
-  const precision = hitOffsets.length ? 1-(hitOffsets.reduce((a,b)=>a+b)/hitOffsets.length)/40 : 0;
-  const speed = clamp(avgTime ? 1/(avgTime/300) : 0);
-  const precisionScore = clamp((hits/shots) * precision);
-  const finalScore = speed*0.3 + precisionScore*0.7;
-  scoreEl.textContent = Math.round(finalScore*1000);
+  // Score is now accumulated per hit, no need to recalc skill score here
 }
 
 // Create a particle effect at x,y
@@ -55,51 +48,6 @@ function createParticle(x,y) {
   gameArea.appendChild(p);
   setTimeout(()=>p.remove(),600);
 }
-
-// Spawn a target
-function spawnTarget() {
-  if(target) target.remove();
-
-  const size = sizeSlider.value;
-  target = document.createElement("div");
-  target.className = "target";
-  target.style.width = `${size}px`;
-  target.style.height = `${size}px`;
-
-  const x = Math.random() * (gameArea.clientWidth - size);
-  const y = Math.random() * (gameArea.clientHeight - size);
-  target.style.left = `${x}px`;
-  target.style.top = `${y}px`;
-
-  target.addEventListener("click", (e)=>{
-    e.stopPropagation();
-    shots++;
-    hits++;
-
-    const rect = target.getBoundingClientRect();
-    const centerX = rect.left + rect.width/2 - gameArea.getBoundingClientRect().left;
-    const centerY = rect.top + rect.height/2 - gameArea.getBoundingClientRect().top;
-    const dx = e.clientX - rect.left;
-    const dy = e.clientY - rect.top;
-    hitOffsets.push(Math.hypot(dx-rect.width/2, dy-rect.height/2));
-    clickTimes.push(performance.now());
-
-    createParticle(centerX, centerY);
-    showScorePopup(centerX, centerY, "+1");
-
-    updateStats();
-    spawnTarget();
-  });
-
-  gameArea.appendChild(target);
-}
-
-// Click = miss
-gameArea.addEventListener("click",()=>{
-  if(!roundActive) return;
-  shots++;
-  updateStats();
-});
 
 // Show floating score popup
 function showScorePopup(x,y,text) {
@@ -126,10 +74,69 @@ function showScorePopup(x,y,text) {
   },600);
 }
 
+// Spawn a target
+function spawnTarget() {
+  if(target) target.remove();
+
+  const size = sizeSlider.value;
+  target = document.createElement("div");
+  target.className = "target";
+  target.style.width = `${size}px`;
+  target.style.height = `${size}px`;
+
+  const x = Math.random() * (gameArea.clientWidth - size);
+  const y = Math.random() * (gameArea.clientHeight - size);
+  target.style.left = `${x}px`;
+  target.style.top = `${y}px`;
+
+  target.addEventListener("click", (e)=>{
+    e.stopPropagation();
+    shots++;
+    hits++;
+
+    const rect = target.getBoundingClientRect();
+    const centerX = rect.left + rect.width/2 - gameArea.getBoundingClientRect().left;
+    const centerY = rect.top + rect.height/2 - gameArea.getBoundingClientRect().top;
+
+    // Distance from click to center
+    const dx = e.clientX - rect.left - rect.width/2;
+    const dy = e.clientY - rect.top - rect.height/2;
+    const distance = Math.hypot(dx, dy);
+
+    hitOffsets.push(distance);
+    clickTimes.push(performance.now());
+
+    // Distance-based points (1-10)
+    const radius = rect.width/2;
+    let points = Math.ceil((1 - distance/radius) * 10);
+    points = Math.max(1, Math.min(points, 10)); // clamp 1-10
+
+    // Add to score
+    scoreEl.textContent = parseInt(scoreEl.textContent || 0) + points;
+
+    // Particle + score popup
+    createParticle(centerX, centerY);
+    showScorePopup(centerX, centerY, `+${points}`);
+
+    updateStats();
+    spawnTarget();
+  });
+
+  gameArea.appendChild(target);
+}
+
+// Click = miss
+gameArea.addEventListener("click",()=>{
+  if(!roundActive) return;
+  shots++;
+  updateStats();
+});
+
 // Start round
 startBtn.addEventListener("click",()=>{
   shots=0; hits=0; clickTimes=[]; hitOffsets=[];
   roundActive=true; updateStats();
+  scoreEl.textContent = '0'; // reset points
   spawnTarget();
 
   const difficulty = difficultySelect.value;
