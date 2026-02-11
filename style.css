@@ -1,35 +1,99 @@
 :root {
-  --bg: #0f172a;
+  --bg: linear-gradient(135deg, #1e3a8a, #2563eb); /* blue gradient background */
   --accent: #22c55e;
   --danger: #ef4444;
-  --text: #e5e7eb;
+  --text: #f0f0f0;
+  --btn-bg: #2563eb;
+  --btn-hover: #1e40af;
+  --target-color1: #f87171;
+  --target-color2: #facc15;
 }
 
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: sans-serif;
+  font-family: 'Segoe UI', sans-serif;
   text-align: center;
   margin: 0;
   padding: 20px;
 }
 
+h1 {
+  text-shadow: 2px 2px 6px #000;
+  font-size: 2.2rem;
+}
+
 #controls {
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+#controls label {
+  font-weight: bold;
+  background: rgba(0,0,0,0.2);
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+#controls select, #controls input[type="range"] {
+  margin-left: 5px;
+}
+
+button#start {
+  padding: 8px 20px;
+  font-size: 1rem;
+  font-weight: bold;
+  color: var(--text);
+  background: var(--btn-bg);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+button#start:hover {
+  background: var(--btn-hover);
+  transform: scale(1.05);
+}
+
+#timer {
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-left: 10px;
+}
+
+#stats {
+  margin-top: 10px;
+  font-size: 1.1rem;
+  background: rgba(0,0,0,0.2);
+  display: inline-block;
+  padding: 8px 15px;
+  border-radius: 8px;
 }
 
 #game-area {
-  width: 600px;
-  height: 400px;
-  border: 2px solid var(--accent);
+  width: 700px;
+  height: 450px;
+  border: 3px solid var(--accent);
   margin: 20px auto;
   position: relative;
   cursor: crosshair;
-  background: linear-gradient(135deg, #1e293b, #0f172a);
+  background: radial-gradient(circle at center, #1e40af 0%, #1e3a8a 80%);
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
 }
 
 .target {
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(circle, #f87171, #dc2626);
+  background: radial-gradient(circle, var(--target-color1), var(--target-color2));
+  box-shadow: 0 0 15px #fff, 0 0 30px var(--target-color2);
+  transition: transform 0.1s ease;
+}
+
+.target:active {
+  transform: scale(0.9);
 }
