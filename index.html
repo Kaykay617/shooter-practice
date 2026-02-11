@@ -1,24 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Aim Trainer</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
+  <h1>Aim Trainer 🎯</h1>
 
-<h1>Aim Trainer</h1>
+  <div id="controls">
+    <label>
+      Target Size:
+      <input type="range" id="sizeSlider" min="20" max="80" value="40">
+    </label>
 
-<div id="stats">
-  Shots: <span id="shots">0</span> |
-  Hits: <span id="hits">0</span> |
-  Accuracy: <span id="accuracy">0%</span>
-</div>
+    <label>
+      Difficulty:
+      <select id="difficultySelect">
+        <option value="easy">Easy</option>
+        <option value="medium" selected>Medium</option>
+        <option value="hard">Hard</option>
+      </select>
+    </label>
 
-<div id="game-area"></div>
+    <button id="start">Start Round</button>
+  </div>
 
-<button id="start">Start Round</button>
+  <div id="stats">
+    Shots: <span id="shots">0</span> |
+    Hits: <span id="hits">0</span> |
+    Accuracy: <span id="accuracy">0%</span> |
+    Score: <span id="score">0</span>
+  </div>
 
-<script src="script.js"></script>
+  <div id="game-area"></div>
+
+  <script src="script.js"></script>
 </body>
 </html>

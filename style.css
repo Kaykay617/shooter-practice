@@ -1,21 +1,35 @@
+:root {
+  --bg: #0f172a;
+  --accent: #22c55e;
+  --danger: #ef4444;
+  --text: #e5e7eb;
+}
+
 body {
-  text-align: center;
+  background: var(--bg);
+  color: var(--text);
   font-family: sans-serif;
+  text-align: center;
+  margin: 0;
+  padding: 20px;
+}
+
+#controls {
+  margin-bottom: 10px;
 }
 
 #game-area {
   width: 600px;
   height: 400px;
-  border: 2px solid black;
+  border: 2px solid var(--accent);
   margin: 20px auto;
   position: relative;
   cursor: crosshair;
+  background: linear-gradient(135deg, #1e293b, #0f172a);
 }
 
 .target {
-  width: 40px;
-  height: 40px;
-  background-color: red;
-  border-radius: 50%;
   position: absolute;
+  border-radius: 50%;
+  background: radial-gradient(circle, #f87171, #dc2626);
 }

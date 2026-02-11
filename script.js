@@ -2,28 +2,82 @@ const gameArea = document.getElementById("game-area");
 const shotsEl = document.getElementById("shots");
 const hitsEl = document.getElementById("hits");
 const accuracyEl = document.getElementById("accuracy");
+const scoreEl = document.getElementById("score");
 const startBtn = document.getElementById("start");
+const sizeSlider = document.getElementById("sizeSlider");
+const difficultySelect = document.getElementById("difficultySelect");
 
 let shots = 0;
 let hits = 0;
 let roundActive = false;
 let target;
+let clickTimes = [];
+let hitOffsets = [];
+let spawnInterval;
 
+const difficultySettings = {
+  easy: 1200,
+  medium: 800,
+  hard: 400
+};
+
+// Utility
+function clamp(v) {
+  return Math.max(0, Math.min(1, v));
+}
+
+// Stats update
+function updateStats() {
+  shotsEl.textContent = shots;
+  hitsEl.textContent = hits;
+  accuracyEl.textContent = shots === 0 ? "0%" : `${Math.round((hits/shots)*100)}%`;
+
+  // Skill-based score
+  const avgTime = clickTimes.length > 1
+    ? (clickTimes.at(-1) - clickTimes[0]) / hits
+    : 0;
+
+  const precision = hitOffsets.length
+    ? 1 - (hitOffsets.reduce((a,b)=>a+b)/hitOffsets.length)/40
+    : 0;
+
+  const speed = clamp(avgTime ? 1/(avgTime/300) : 0);
+  const precisionScore = clamp((hits/shots) * precision);
+
+  const finalScore = speed*0.3 + precisionScore*0.7;
+  scoreEl.textContent = Math.round(finalScore*1000);
+}
+
+// Spawn a target
 function spawnTarget() {
   if (target) target.remove();
 
+  const size = sizeSlider.value;
+
   target = document.createElement("div");
-  target.classList.add("target");
+  target.className = "target";
+  target.style.width = `${size}px`;
+  target.style.height = `${size}px`;
 
-  const x = Math.random() * (gameArea.clientWidth - 40);
-  const y = Math.random() * (gameArea.clientHeight - 40);
-
+  const x = Math.random() * (gameArea.clientWidth - size);
+  const y = Math.random() * (gameArea.clientHeight - size);
   target.style.left = `${x}px`;
   target.style.top = `${y}px`;
 
   target.addEventListener("click", (e) => {
-    e.stopPropagation(); // prevents counting as a miss
+    e.stopPropagation();
+    shots++;
     hits++;
+
+    const rect = target.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = e.clientX - centerX;
+    const dy = e.clientY - centerY;
+
+    hitOffsets.push(Math.hypot(dx, dy));
+    clickTimes.push(performance.now());
+
     updateStats();
     spawnTarget();
   });
@@ -31,29 +85,41 @@ function spawnTarget() {
   gameArea.appendChild(target);
 }
 
-function updateStats() {
-  shotsEl.textContent = shots;
-  hitsEl.textContent = hits;
-  accuracyEl.textContent =
-    shots === 0 ? "0%" : `${Math.round((hits / shots) * 100)}%`;
-}
-
+// Game area click (miss)
 gameArea.addEventListener("click", () => {
   if (!roundActive) return;
   shots++;
   updateStats();
 });
 
+// Start button
 startBtn.addEventListener("click", () => {
   shots = 0;
   hits = 0;
+  clickTimes = [];
+  hitOffsets = [];
   roundActive = true;
   updateStats();
-  spawnTarget();
 
+  spawnTarget();
+  const difficulty = difficultySelect.value;
+  clearInterval(spawnInterval);
+
+  // Optional moving target
+  if(difficulty === "hard") {
+    spawnInterval = setInterval(() => {
+      if(!target) return;
+      const size = target.offsetWidth;
+      target.style.left = `${Math.random() * (gameArea.clientWidth - size)}px`;
+      target.style.top = `${Math.random() * (gameArea.clientHeight - size)}px`;
+    }, 400);
+  }
+
+  // 30-second round
   setTimeout(() => {
     roundActive = false;
-    if (target) target.remove();
-    alert(`Round over!\nAccuracy: ${accuracyEl.textContent}`);
-  }, 30000); // 30-second round
+    if(target) target.remove();
+    clearInterval(spawnInterval);
+    alert(`Round over!\nAccuracy: ${accuracyEl.textContent}\nScore: ${scoreEl.textContent}`);
+  }, 30000);
 });
