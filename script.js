@@ -10,6 +10,7 @@ const timerEl = document.getElementById("timer");
 
 let shots = 0;
 let hits = 0;
+let score = 0;           // NEW: keep track of total points
 let roundActive = false;
 let target;
 let clickTimes = [];
@@ -18,7 +19,6 @@ let spawnInterval;
 let roundTime = 30;
 let timerCountdown;
 
-// Difficulty spawn rates (ms)
 const difficultySettings = {
   easy: 1200,
   medium: 800,
@@ -28,15 +28,15 @@ const difficultySettings = {
 // Utility clamp
 function clamp(v) { return Math.max(0, Math.min(1, v)); }
 
-// Update stats
+// Update stats display
 function updateStats() {
   shotsEl.textContent = shots;
   hitsEl.textContent = hits;
   accuracyEl.textContent = shots === 0 ? "0%" : `${Math.round((hits/shots)*100)}%`;
-  // Score is now accumulated per hit, no need to recalc skill score here
+  scoreEl.textContent = score;  // show points
 }
 
-// Create a particle effect at x,y
+// Particle effect
 function createParticle(x,y) {
   const p = document.createElement('div');
   p.className = 'particle';
@@ -49,7 +49,7 @@ function createParticle(x,y) {
   setTimeout(()=>p.remove(),600);
 }
 
-// Show floating score popup
+// Floating score popup
 function showScorePopup(x,y,text) {
   const pop = document.createElement('div');
   pop.textContent = text;
@@ -90,31 +90,37 @@ function spawnTarget() {
   target.style.top = `${y}px`;
 
   target.addEventListener("click", (e)=>{
-    e.stopPropagation();
+    if(!roundActive) return;
     shots++;
     hits++;
 
     const rect = target.getBoundingClientRect();
-    const centerX = rect.left + rect.width/2 - gameArea.getBoundingClientRect().left;
-    const centerY = rect.top + rect.height/2 - gameArea.getBoundingClientRect().top;
+    const gameRect = gameArea.getBoundingClientRect();
 
-    // Distance from click to center
-    const dx = e.clientX - rect.left - rect.width/2;
-    const dy = e.clientY - rect.top - rect.height/2;
+    // Calculate center relative to game area
+    const centerX = rect.left + rect.width/2 - gameRect.left;
+    const centerY = rect.top + rect.height/2 - gameRect.top;
+
+    // Click position relative to game area
+    const clickX = e.clientX - gameRect.left;
+    const clickY = e.clientY - gameRect.top;
+
+    // Distance to center
+    const dx = clickX - centerX;
+    const dy = clickY - centerY;
     const distance = Math.hypot(dx, dy);
 
     hitOffsets.push(distance);
     clickTimes.push(performance.now());
 
-    // Distance-based points (1-10)
+    // Points calculation (1-10)
     const radius = rect.width/2;
     let points = Math.ceil((1 - distance/radius) * 10);
-    points = Math.max(1, Math.min(points, 10)); // clamp 1-10
+    points = Math.max(1, Math.min(points, 10));
 
-    // Add to score
-    scoreEl.textContent = parseInt(scoreEl.textContent || 0) + points;
+    score += points;
 
-    // Particle + score popup
+    // Particle + popup
     createParticle(centerX, centerY);
     showScorePopup(centerX, centerY, `+${points}`);
 
@@ -134,9 +140,8 @@ gameArea.addEventListener("click",()=>{
 
 // Start round
 startBtn.addEventListener("click",()=>{
-  shots=0; hits=0; clickTimes=[]; hitOffsets=[];
+  shots=0; hits=0; score=0; clickTimes=[]; hitOffsets=[];
   roundActive=true; updateStats();
-  scoreEl.textContent = '0'; // reset points
   spawnTarget();
 
   const difficulty = difficultySelect.value;
@@ -144,9 +149,9 @@ startBtn.addEventListener("click",()=>{
 
   // Timer
   clearInterval(timerCountdown);
-  let timeLeft=roundTime;
-  timerEl.textContent=`Time: ${timeLeft}s`;
-  timerCountdown=setInterval(()=>{
+  let timeLeft = roundTime;
+  timerEl.textContent = `Time: ${timeLeft}s`;
+  timerCountdown = setInterval(()=>{
     if(!roundActive) { clearInterval(timerCountdown); return; }
     timeLeft--;
     timerEl.textContent=`Time: ${timeLeft}s`;
@@ -159,13 +164,13 @@ startBtn.addEventListener("click",()=>{
     }
   },1000);
 
-  // Smooth target movement for medium/hard
+  // Moving targets for medium/hard
   if(difficulty!=="easy"){
-    spawnInterval=setInterval(()=>{
+    spawnInterval = setInterval(()=>{
       if(!target) return;
-      const size=target.offsetWidth;
-      target.style.left=`${Math.random()*(gameArea.clientWidth-size)}px`;
-      target.style.top=`${Math.random()*(gameArea.clientHeight-size)}px`;
+      const size = target.offsetWidth;
+      target.style.left = `${Math.random()*(gameArea.clientWidth-size)}px`;
+      target.style.top = `${Math.random()*(gameArea.clientHeight-size)}px`;
     }, difficultySettings[difficulty]);
   }
 });
